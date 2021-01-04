@@ -40,6 +40,7 @@ import com.axelor.rpc.ActionResponse;
 import com.axelor.rpc.Context;
 import com.axelor.rpc.filter.Filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.inject.Singleton;
@@ -197,7 +198,7 @@ public class AdvancedExportController {
     if (!advancedExport.getAdvancedExportLineList().isEmpty()) {
       List<Long> recordIds = createCriteria(request, advancedExport);
 
-      File file = advancedExportService.export(advancedExport, recordIds, fileType);
+      File file = advancedExportService.export(advancedExport, recordIds, fileType, false);
 
       if (advancedExportService.getIsReachMaxExportLimit()) {
         response.setFlash(I18n.get(IExceptionMessage.ADVANCED_EXPORT_3));
@@ -216,14 +217,23 @@ public class AdvancedExportController {
   }
 
   @SuppressWarnings("unchecked")
-  private List<Long> createCriteria(ActionRequest request, AdvancedExport advancedExport) {
+  private List<Long> createCriteria(ActionRequest request, AdvancedExport advancedExport)
+      throws AxelorException {
+
+    List<Long> recordIds = null;
+
+    if (request.getContext().get("filterCondition") != null) {
+      recordIds = Beans.get(AdvancedExportService.class).getFilterConditionRecords(advancedExport);
+    }
 
     if (request.getContext().get("_criteria") != null) {
+
       if (request.getContext().get("_criteria").toString().startsWith("[")) {
         String ids = request.getContext().get("_criteria").toString();
-        return Splitter.on(", ").splitToList(ids.substring(1, ids.length() - 1)).stream()
-            .map(id -> Long.valueOf(id.toString()))
-            .collect(Collectors.toList());
+        recordIds.addAll(
+            Splitter.on(", ").splitToList(ids.substring(1, ids.length() - 1)).stream()
+                .map(id -> Long.valueOf(id.toString()))
+                .collect(Collectors.toList()));
 
       } else {
         ObjectMapper mapper = new ObjectMapper();
@@ -238,10 +248,10 @@ public class AdvancedExportController {
                 .getCriteria()
                 .createQuery(klass, filter)
                 .fetchSteam(advancedExport.getMaxExportLimit());
-        return listObj.map(it -> it.getId()).collect(Collectors.toList());
+        recordIds.addAll(listObj.map(it -> it.getId()).collect(Collectors.toList()));
       }
     }
-    return null;
+    return recordIds;
   }
 
   @SuppressWarnings("unchecked")
@@ -303,7 +313,33 @@ public class AdvancedExportController {
     }
   }
 
-  private void downloadExportFile(ActionResponse response, MetaFile exportFile) {
+  public void getModelGrid(ActionRequest request, ActionResponse response) {
+
+    Integer advanceExportId = (Integer) request.getContext().get("_id");
+
+    if (advanceExportId != null) {
+      AdvancedExport advancedExport =
+          Beans.get(AdvancedExportRepository.class).find(advanceExportId.longValue());
+
+      String gridView =
+          CaseFormat.UPPER_CAMEL.to(
+              CaseFormat.LOWER_HYPHEN, advancedExport.getMetaModel().getName());
+      gridView += "-grid";
+
+      response.setView(
+          ActionView.define(I18n.get(advancedExport.getMetaModel().getName()))
+              .model(advancedExport.getMetaModel().getFullName())
+              .add("grid", gridView)
+              .map());
+    }
+  }
+
+  public void showIds(ActionRequest request, ActionResponse response) {
+
+    System.out.println(request.getContext().get("_selected"));
+  }
+
+  protected void downloadExportFile(ActionResponse response, MetaFile exportFile) {
     if (exportFile != null) {
       response.setView(
           ActionView.define(I18n.get("Export file"))
