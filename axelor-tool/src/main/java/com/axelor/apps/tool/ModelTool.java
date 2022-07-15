@@ -189,4 +189,14 @@ public final class ModelTool {
     }
     return dest;
   }
+
+  public static void emptyTable(Class<? extends Model> modelClass) throws AxelorException {
+    Model query = JPA.all(modelClass).fetchOne();
+
+    if (query == null) {
+      throw new AxelorException(
+          TraceBackRepository.CATEGORY_NO_VALUE,
+          I18n.get(IExceptionMessage.DUPLICATE_NO_DATA_FOUND));
+    }
+  }
 }
