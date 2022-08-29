@@ -567,6 +567,8 @@
 "An accounting moveline must have either a credit value or a debit value.",,,
 "An analytic distribution is set in move line %s but the account used do not allow analytic distribution",,,
 "An analytic distribution is set in product but the account used do not allow analytic distribution",,,
+"An inconsistency has been detected. At least one move line has its due date prior to the move origin date. However, by nature, this date must be either equal to or later than the date of the origin document.",,,
+"An inconsistency has been detected. The input due date is before the move origin date. However, by nature, this date must be either equal to or later than the date of the origin document.",,,
 "Analytic",,,
 "Analytic Acc.",,,
 "Analytic Account",,,
