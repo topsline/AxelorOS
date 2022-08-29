@@ -58,6 +58,7 @@ public class ProductServiceImpl implements ProductService {
   protected ProductRepository productRepo;
   protected ProductCompanyService productCompanyService;
   protected CompanyRepository companyRepo;
+  protected ProductComputePriceService productComputePriceService;
 
   @Inject
   public ProductServiceImpl(
@@ -66,13 +67,15 @@ public class ProductServiceImpl implements ProductService {
       SequenceService sequenceService,
       AppBaseService appBaseService,
       ProductRepository productRepo,
-      ProductCompanyService productCompanyService) {
+      ProductCompanyService productCompanyService,
+      ProductComputePriceService productComputePriceService) {
     this.productVariantService = productVariantService;
     this.productVariantRepo = productVariantRepo;
     this.sequenceService = sequenceService;
     this.appBaseService = appBaseService;
     this.productRepo = productRepo;
     this.productCompanyService = productCompanyService;
+    this.productComputePriceService = productComputePriceService;
   }
 
   @Inject private MetaFiles metaFiles;
@@ -158,18 +161,7 @@ public class ProductServiceImpl implements ProductService {
       }
     }
 
-    if ((BigDecimal) productCompanyService.get(product, "costPrice", company) != null
-        && managePriceCoef != null
-        && (Boolean) productCompanyService.get(product, "autoUpdateSalePrice", company)) {
-
-      productCompanyService.set(
-          product,
-          "salePrice",
-          (((BigDecimal) productCompanyService.get(product, "costPrice", company))
-                  .multiply(managePriceCoef))
-              .setScale(appBaseService.getNbDecimalDigitForUnitPrice(), BigDecimal.ROUND_HALF_UP),
-          company);
-    }
+    computeAndUpdateSalePrice(product, company, managePriceCoef);
 
     if ((BigDecimal) productCompanyService.get(product, "salePrice", company) != null) {
 
@@ -188,6 +180,24 @@ public class ProductServiceImpl implements ProductService {
     if (product.getProductVariantConfig() != null && product.getManageVariantPrice()) {
 
       this.updateSalePriceOfVariant(product);
+    }
+  }
+
+  @Override
+  public void computeAndUpdateSalePrice(
+      Product product, Company company, BigDecimal managePriceCoef) throws AxelorException {
+    if (productCompanyService.get(product, "costPrice", company) != null
+        && managePriceCoef != null
+        && (Boolean) productCompanyService.get(product, "autoUpdateSalePrice", company)) {
+      productCompanyService.set(
+          product,
+          "salePrice",
+          productComputePriceService.computeSalePrice(
+              (BigDecimal) productCompanyService.get(product, "managePriceCoef", company),
+              (BigDecimal) productCompanyService.get(product, "costPrice", company),
+              product,
+              company),
+          company);
     }
   }
 

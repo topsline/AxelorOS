@@ -206,7 +206,8 @@
             showIf="sellable" canNew="false" canSelect="true"/>
           <field name="productSynchronizedInPrestashop" colSpan="6"
             if="__config__.app.isApp('prestashop')" if-module="axelor-prestashop"/>
-          <field name="autoUpdateSalePrice" hideIf="!sellable" colSpan="12"/>
+          <field name="autoUpdateSalePrice" hideIf="!sellable" colSpan="12"
+            onChange="action-product-method-update-sale-price"/>
           <field name="salePrice" readonlyIf="autoUpdateSalePrice" hideIf="!sellable"
             colSpan="12"/>
           <field name="saleCurrency" canEdit="false" hideIf="!sellable" colSpan="12"
@@ -216,14 +217,15 @@
             hideIf="isShippingCostsProduct || !sellable"/>
           <panel name="unitsPanel" title="Units" colSpan="12">
             <field name="unit" canEdit="false" colSpan="6" form-view="unit-form"
-              grid-view="unit-grid"/>
+              grid-view="unit-grid" onChange="action-product-group-unit-onchange"/>
             <button name="updateUnitBtn" title="Update stock location" colSpan="6"
               showIf="id &amp;&amp; productTypeSelect == 'storable' &amp;&amp; stockManaged"
               onClick="save,action-product-method-update-stock-location" if-module="axelor-stock"
               if="__config__.app.isApp('stock')"/>
             <field name="salesUnit" canEdit="false" hideIf="!sellable" colSpan="6"
               form-view="unit-form" grid-view="unit-grid"
-              if="__config__.app.getApp('sale')?.getManageSalesUnits()"/>
+              if="__config__.app.getApp('sale')?.getManageSalesUnits()"
+              onChange="action-product-group-unit-onchange"/>
             <spacer colSpan="6"/>
             <field name="purchasesUnit" canEdit="false" hideIf="!purchasable" colSpan="6"
               form-view="unit-form" grid-view="unit-grid"
@@ -289,11 +291,11 @@
         </panel>
         <panel name="costsPanel" title="Costs" colSpan="6">
           <field name="costPrice" colSpan="6" readonlyIf="costTypeSelect != 1"
-            onChange="action-product-record-compute-sale-price"/>
+            onChange="action-product-method-update-sale-price"/>
           <field name="costTypeSelect" colSpan="6"
             onChange="action-product-group-cost-type-select-onchange"/>
           <field name="managPriceCoef" colSpan="12"
-            onChange="action-product-record-compute-sale-price"/>
+            onChange="action-product-method-update-sale-price"/>
           <field name="shippingCoef" onChange="action-product-group-cost-type-select-onchange"
             showIf="!defShipCoefByPartner &amp;&amp; purchasable" if-module="axelor-purchase"
             if="__config__.app.isApp('purchase')"/>
@@ -655,7 +657,12 @@
 
   <action-group name="action-product-group-cost-type-select-onchange">
     <action name="action-product-attrs-update-cost-price"/>
-    <action name="action-product-record-compute-sale-price"/>
+    <action name="action-product-method-update-sale-price"/>
+  </action-group>
+
+  <action-group name="action-product-group-unit-onchange">
+    <action name="action-product-method-update-sale-price"/>
+    <action name="action-product-method-update-product-company-sale-price"/>
   </action-group>
 
   <action-record name="action-product-record-sellable"
@@ -782,12 +789,6 @@
     model="com.axelor.apps.base.db.Product">
     <field name="saleSupplySelect" expr="1" if="productTypeSelect == 'storable'"/>
     <field name="saleSupplySelect" expr="3" if="productTypeSelect == 'service'"/>
-  </action-record>
-
-  <action-record name="action-product-record-compute-sale-price"
-    model="com.axelor.apps.base.db.Product">
-    <field name="salePrice" expr="eval: managPriceCoef*costPrice"
-      if="costPrice != null &amp;&amp; managPriceCoef != null &amp;&amp; autoUpdateSalePrice"/>
   </action-record>
 
   <action-record name="action-product-set-total-variants"
@@ -992,6 +993,15 @@
 
   <action-method name="action-product-method-set-anomaly">
     <call class="com.axelor.apps.base.web.ProductController" method="setPriceListLineAnomaly"/>
+  </action-method>
+
+  <action-method name="action-product-method-update-sale-price">
+    <call class="com.axelor.apps.base.web.ProductController" method="updateSalePrice"/>
+  </action-method>
+
+  <action-method name="action-product-method-update-product-company-sale-price">
+    <call class="com.axelor.apps.base.web.ProductController"
+      method="updateProductsCompanySalePrice"/>
   </action-method>
 
 </object-views>
