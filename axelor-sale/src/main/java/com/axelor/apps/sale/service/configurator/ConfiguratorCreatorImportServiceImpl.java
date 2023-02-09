@@ -19,6 +19,7 @@ package com.axelor.apps.sale.service.configurator;
 
 import com.axelor.apps.sale.db.ConfiguratorCreator;
 import com.axelor.apps.sale.db.ConfiguratorFormula;
+import com.axelor.apps.sale.db.repo.ConfiguratorCreatorSaleRepository;
 import com.axelor.common.StringUtils;
 import com.axelor.data.Listener;
 import com.axelor.data.xml.XMLImporter;
@@ -153,7 +154,7 @@ public class ConfiguratorCreatorImportServiceImpl implements ConfiguratorCreator
     for (MetaJsonField attribute : attributes) {
       String name = attribute.getName();
       if (name != null) {
-        name = name.replace("$AXELORTMP", "");
+        name = name.replace(ConfiguratorCreatorSaleRepository.AXELOR_TMP_FIX_CONSTRAINT, "");
         if (name.contains("_")) {
           attribute.setName(name.substring(0, name.lastIndexOf('_')) + '_' + creator.getId());
         }
