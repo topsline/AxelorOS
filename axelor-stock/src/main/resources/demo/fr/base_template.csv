@@ -24,14 +24,14 @@ Please let us know when you estimate to deliver the remaining goods.</p>
 
 <p>Best regards<br/>
 Axelor Team</p>";"$StockMove.partner.emailAddress.address$";;;2
-"Règle de stocks";"StockRules";2;;;;"true";;"Règle de stock $StockRules.product.fullName$ non respectée";"<p>Bonjour,</p>
+"Règle de stocks";"StockRules";2;;;;"true";"emailTo";"Règle de stock $StockRules.product.fullName$ non respectée";"<p>Bonjour,</p>
 
 <p>Nous constatons une rupture de stock pour le produit $StockRules.product.fullName$ dans l'emplacement $StockRules.stockLocation.name$.</p>
 
-<p>Cordialement</p>";"$StockMove.partner.emailAddress.address$";;;2
-"Fiche logistique";"LogisticalForm";"2";;;;"true";;"Nouvelle fiche logistique saisie ($LogisticalForm.deliveryNumber$)";"<p>Bonjour,</p>
+<p>Cordialement</p>";"$emailTo$";;;2
+"Fiche logistique";"LogisticalForm";2;;;;"true";;"Nouvelle fiche logistique saisie ($LogisticalForm.deliveryNumber$)";"<p>Bonjour,</p>
 
 <p>Une nouvelle fiche logistique a été saisie.</p>
 <p>Son numéro d'expédition est $LogisticalForm.deliveryNumber$ et le client livré est $LogisticalForm.deliverToCustomerPartner.fullName$.</p>
 
-<p>Cordialement</p>";"";;;"2"
+<p>Cordialement</p>";;;;2
