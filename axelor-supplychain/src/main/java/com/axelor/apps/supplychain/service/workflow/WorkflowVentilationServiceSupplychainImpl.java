@@ -49,6 +49,7 @@ import com.axelor.apps.supplychain.service.SaleOrderInvoiceService;
 import com.axelor.apps.supplychain.service.StockMoveInvoiceService;
 import com.axelor.apps.supplychain.service.app.AppSupplychainService;
 import com.axelor.apps.supplychain.service.config.SupplyChainConfigService;
+import com.axelor.common.ObjectUtils;
 import com.axelor.exception.AxelorException;
 import com.axelor.exception.db.repo.TraceBackRepository;
 import com.axelor.i18n.I18n;
@@ -192,6 +193,11 @@ public class WorkflowVentilationServiceSupplychainImpl extends WorkflowVentilati
               != InvoiceRepository.OPERATION_SUB_TYPE_SUBSCRIPTION) {
         invoice.setOperationSubTypeSelect(InvoiceRepository.OPERATION_SUB_TYPE_BALANCE);
       }
+    }
+
+    SaleOrder saleOrder = invoice.getSaleOrder();
+    if (ObjectUtils.isEmpty(saleOrderSet) && saleOrder != null) {
+      saleOrderInvoiceService.update(saleOrder, invoice.getId(), false);
     }
   }
 
