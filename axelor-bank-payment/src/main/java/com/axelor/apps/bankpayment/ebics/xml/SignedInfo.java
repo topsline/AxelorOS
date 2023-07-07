@@ -74,6 +74,7 @@ public class SignedInfo extends DefaultEbicsRootElement {
   /**
    * Constructs a new <code>SignedInfo</code> element
    *
+   * @param user
    * @param digest the digest value
    */
   public SignedInfo(EbicsUser user, byte[] digest) {
@@ -129,7 +130,6 @@ public class SignedInfo extends DefaultEbicsRootElement {
    * Returns the signed info element as an <code>XmlObject</code>
    *
    * @return he signed info element
-   * @throws EbicsException user Signature and Canonicalization errors
    */
   public SignatureType getSignatureType() {
     return ((SignatureType) document);
@@ -152,7 +152,7 @@ public class SignedInfo extends DefaultEbicsRootElement {
    *
    * @param toSign the input to sign
    * @return the signed input
-   * @throws EbicsException signature fails.
+   * @throws AxelorException
    */
   public byte[] sign(byte[] toSign) throws AxelorException {
     try {
