@@ -42,6 +42,7 @@ import com.axelor.apps.base.AxelorException;
 import com.axelor.apps.base.ResponseMessageType;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.Product;
+import com.axelor.apps.base.db.repo.ProductRepository;
 import com.axelor.apps.base.db.repo.TraceBackRepository;
 import com.axelor.apps.base.exceptions.BaseExceptionMessage;
 import com.axelor.apps.base.service.app.AppBaseService;
@@ -105,6 +106,21 @@ import org.slf4j.LoggerFactory;
 public class ExpenseController {
 
   private final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public void autoCalculateTotalTaxFromProductAndTotalAmount(
+      ActionRequest request, ActionResponse response) {
+    ExpenseLine expenseLine = request.getContext().asType(ExpenseLine.class);
+    if (expenseLine != null) {
+      if (expenseLine.getExpenseProduct().getTaxComputeModeSelect() == ProductRepository.NO_TAX) {
+        response.setValue("totalTax", null);
+      } else if (expenseLine.getExpenseProduct().getTaxComputeModeSelect()
+          == ProductRepository.TAX_IN_PERCENTAGE) {
+        expenseLine =
+            Beans.get(ExpenseLineService.class).getTotalTaxFromProductAndTotalAmount(expenseLine);
+        response.setValue("totalTax", expenseLine.getTotalTax());
+      }
+    }
+  }
 
   public void createAnalyticDistributionWithTemplate(ActionRequest request, ActionResponse response)
       throws AxelorException {

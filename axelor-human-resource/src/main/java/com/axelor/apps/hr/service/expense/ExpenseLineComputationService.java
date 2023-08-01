@@ -18,21 +18,8 @@
  */
 package com.axelor.apps.hr.service.expense;
 
-import com.axelor.apps.hr.db.Expense;
 import com.axelor.apps.hr.db.ExpenseLine;
-import java.util.List;
 
-public interface ExpenseLineService {
-
-  public List<ExpenseLine> getExpenseLineList(Expense expense);
-
-  /**
-   * fill {@link ExpenseLine#expense} in {@link Expense#generalExpenseLineList} and {@link
-   * Expense#kilometricExpenseLineList}
-   *
-   * @param expense
-   */
-  void completeExpenseLines(Expense expense);
-
+public interface ExpenseLineComputationService {
   public ExpenseLine getTotalTaxFromProductAndTotalAmount(ExpenseLine expenseLine);
 }
