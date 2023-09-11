@@ -824,7 +824,8 @@ InvoiceSet.length > 0))"
             <viewer><![CDATA[{{record.reasonOfRefusalToPayStr}}]]></viewer>
           </field>
         </panel>
-        <panel name="financialDiscountPanel" showIf="statusSelect > 2" colSpan="12">
+        <panel name="financialDiscountPanel" showIf="statusSelect > 2" colSpan="12"
+          if="__config__.app.getApp('account')?.getManageFinancialDiscount()">
           <field name="financialDiscount" readonlyIf="amountPaid > 0"
             onChange="action-invoice-group-financial-discount"/>
           <field name="financialDiscountDeadlineDate" readonly="true"
@@ -2703,7 +2704,7 @@ InvoiceSet.length > 0))"
     <field name="remainingAmountAfterFinDiscount"
       expr="eval: inTaxTotal - (financialDiscountRate * inTaxTotal / 100)"
       if="partner &amp;&amp; partner.financialDiscount"/>
-    <field name="legalNotice" expr="eval: partner.financialDiscount.legalNotice"
+    <field name="legalNotice" expr="eval: partner.financialDiscount?.legalNotice"
       if="partner &amp;&amp; partner.financialDiscount"/>
     <field name="financialDiscountDeadlineDate"
       expr="call: com.axelor.apps.account.service.invoice.InvoiceService:getFinancialDiscountDeadlineDate(__self__, financialDiscount)"

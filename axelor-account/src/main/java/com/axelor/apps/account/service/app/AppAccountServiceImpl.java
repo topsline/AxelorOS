@@ -20,6 +20,7 @@ package com.axelor.apps.account.service.app;
 
 import com.axelor.apps.account.db.AccountConfig;
 import com.axelor.apps.account.db.repo.AccountConfigRepository;
+import com.axelor.apps.account.db.repo.InvoiceRepository;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.repo.CompanyRepository;
 import com.axelor.apps.base.service.app.AppBaseServiceImpl;
@@ -48,6 +49,8 @@ public class AppAccountServiceImpl extends AppBaseServiceImpl implements AppAcco
 
   protected CompanyRepository companyRepo;
 
+  protected InvoiceRepository invoiceRepository;
+
   @Inject
   public AppAccountServiceImpl(
       AppRepository appRepo,
@@ -58,12 +61,14 @@ public class AppAccountServiceImpl extends AppBaseServiceImpl implements AppAcco
       AppAccountRepository appAccountRepo,
       AppInvoiceRepository appInvoiceRepo,
       AccountConfigRepository accountConfigRepo,
-      CompanyRepository companyRepo) {
+      CompanyRepository companyRepo,
+      InvoiceRepository invoiceRepository) {
     super(appRepo, metaFiles, appVersionService, metaModelRepo, appSettingsStudioService);
     this.appAccountRepo = appAccountRepo;
     this.appInvoiceRepo = appInvoiceRepo;
     this.accountConfigRepo = accountConfigRepo;
     this.companyRepo = companyRepo;
+    this.invoiceRepository = invoiceRepository;
   }
 
   @Override
