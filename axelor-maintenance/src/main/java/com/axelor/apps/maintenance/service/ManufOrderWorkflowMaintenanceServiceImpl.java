@@ -34,15 +34,10 @@ import com.axelor.apps.production.service.manuforder.ManufOrderWorkflowServiceIm
 import com.axelor.apps.production.service.operationorder.OperationOrderWorkflowService;
 import com.axelor.apps.purchase.service.PurchaseOrderService;
 import com.axelor.inject.Beans;
-import com.google.common.base.MoreObjects;
 import com.google.inject.Inject;
 import com.google.inject.persist.Transactional;
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 
 public class ManufOrderWorkflowMaintenanceServiceImpl extends ManufOrderWorkflowServiceImpl {
@@ -123,22 +118,6 @@ public class ManufOrderWorkflowMaintenanceServiceImpl extends ManufOrderWorkflow
    * @param manufOrder
    * @return
    */
-  @Override
-  protected List<OperationOrder> getSortedOperationOrderList(ManufOrder manufOrder) {
-    List<OperationOrder> operationOrderList =
-        MoreObjects.firstNonNull(manufOrder.getOperationOrderList(), Collections.emptyList());
-    Comparator<OperationOrder> byPriority =
-        Comparator.comparing(
-            OperationOrder::getPriority, Comparator.nullsFirst(Comparator.naturalOrder()));
-    Comparator<OperationOrder> byId =
-        Comparator.comparing(
-            OperationOrder::getId, Comparator.nullsFirst(Comparator.naturalOrder()));
-
-    return operationOrderList.stream()
-        .sorted(byPriority.thenComparing(byId))
-        .collect(Collectors.toList());
-  }
-
   @Override
   public boolean finish(ManufOrder manufOrder) throws AxelorException {
     if (manufOrder.getTypeSelect() != ManufOrderRepository.TYPE_MAINTENANCE) {
