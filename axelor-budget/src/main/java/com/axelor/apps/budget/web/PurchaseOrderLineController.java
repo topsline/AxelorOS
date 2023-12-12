@@ -196,7 +196,7 @@ public class PurchaseOrderLineController {
     try {
       PurchaseOrderLine purchaseOrderLine = request.getContext().asType(PurchaseOrderLine.class);
       PurchaseOrder purchaseOrder = request.getContext().getParent().asType(PurchaseOrder.class);
-      GlobalBudget global = (GlobalBudget) request.getContext().get("$global");
+      GlobalBudget global = purchaseOrder.getGlobalBudget();
       String query = "self.id = 0";
 
       if (purchaseOrder != null && purchaseOrder.getCompany() != null) {
@@ -215,7 +215,7 @@ public class PurchaseOrderLineController {
     try {
       PurchaseOrderLine purchaseOrderLine = request.getContext().asType(PurchaseOrderLine.class);
       PurchaseOrder purchaseOrder = request.getContext().getParent().asType(PurchaseOrder.class);
-      GlobalBudget global = (GlobalBudget) request.getContext().get("$global");
+      GlobalBudget global = purchaseOrder.getGlobalBudget();
       String query = "self.id = 0";
 
       if (purchaseOrder != null && purchaseOrder.getCompany() != null) {
@@ -253,7 +253,7 @@ public class PurchaseOrderLineController {
     try {
       PurchaseOrderLine purchaseOrderLine = request.getContext().asType(PurchaseOrderLine.class);
       PurchaseOrder purchaseOrder = request.getContext().getParent().asType(PurchaseOrder.class);
-      GlobalBudget global = (GlobalBudget) request.getContext().get("$global");
+      GlobalBudget global = purchaseOrder.getGlobalBudget();
       String query = "self.id = 0";
 
       if (purchaseOrder != null && purchaseOrder.getCompany() != null) {
