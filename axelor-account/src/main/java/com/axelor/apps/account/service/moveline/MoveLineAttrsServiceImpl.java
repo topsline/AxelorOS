@@ -28,6 +28,7 @@ import com.axelor.apps.account.db.repo.MoveRepository;
 import com.axelor.apps.account.service.JournalService;
 import com.axelor.apps.account.service.PeriodServiceAccount;
 import com.axelor.apps.account.service.analytic.AnalyticLineService;
+import com.axelor.apps.account.service.analytic.AnalyticToolService;
 import com.axelor.apps.account.service.config.AccountConfigService;
 import com.axelor.apps.account.service.move.MoveLineControlService;
 import com.axelor.apps.base.AxelorException;
@@ -51,6 +52,7 @@ public class MoveLineAttrsServiceImpl implements MoveLineAttrsService {
   protected JournalService journalService;
   protected MoveLineTaxService moveLineTaxService;
   protected MoveLineService moveLineService;
+  protected AnalyticToolService analyticToolService;
 
   @Inject
   public MoveLineAttrsServiceImpl(
@@ -60,7 +62,8 @@ public class MoveLineAttrsServiceImpl implements MoveLineAttrsService {
       PeriodServiceAccount periodServiceAccount,
       JournalService journalService,
       MoveLineTaxService moveLineTaxService,
-      MoveLineService moveLineService) {
+      MoveLineService moveLineService,
+      AnalyticToolService analyticToolService) {
     this.accountConfigService = accountConfigService;
     this.moveLineControlService = moveLineControlService;
     this.analyticLineService = analyticLineService;
@@ -68,6 +71,7 @@ public class MoveLineAttrsServiceImpl implements MoveLineAttrsService {
     this.journalService = journalService;
     this.moveLineTaxService = moveLineTaxService;
     this.moveLineService = moveLineService;
+    this.analyticToolService = analyticToolService;
   }
 
   protected void addAttr(
@@ -163,11 +167,11 @@ public class MoveLineAttrsServiceImpl implements MoveLineAttrsService {
   public void addShowAnalyticDistributionPanel(
       Move move, MoveLine moveLine, Map<String, Map<String, Object>> attrsMap)
       throws AxelorException {
-    boolean condition =
-        accountConfigService.getAccountConfig(move.getCompany()).getManageAnalyticAccounting()
-            && moveLine.getAccount().getAnalyticDistributionAuthorized();
-
-    this.addAttr("analyticDistributionPanel", "hidden", !condition, attrsMap);
+    this.addAttr(
+        "analyticDistributionPanel",
+        "hidden",
+        !analyticToolService.isManageAnalytic(move.getCompany(), moveLine.getAccount()),
+        attrsMap);
   }
 
   @Override

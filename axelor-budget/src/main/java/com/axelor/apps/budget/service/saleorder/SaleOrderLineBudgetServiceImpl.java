@@ -25,6 +25,7 @@ import com.axelor.apps.budget.db.BudgetDistribution;
 import com.axelor.apps.budget.db.repo.BudgetLevelRepository;
 import com.axelor.apps.budget.db.repo.GlobalBudgetRepository;
 import com.axelor.apps.budget.exception.BudgetExceptionMessage;
+import com.axelor.apps.budget.model.AnalyticLineBudgetModel;
 import com.axelor.apps.budget.service.AppBudgetService;
 import com.axelor.apps.budget.service.BudgetDistributionService;
 import com.axelor.apps.budget.service.BudgetService;
@@ -32,6 +33,7 @@ import com.axelor.apps.budget.service.BudgetToolsService;
 import com.axelor.apps.sale.db.SaleOrder;
 import com.axelor.apps.sale.db.SaleOrderLine;
 import com.axelor.apps.sale.db.repo.SaleOrderLineRepository;
+import com.axelor.apps.supplychain.service.AnalyticLineModelService;
 import com.axelor.i18n.I18n;
 import com.google.inject.Inject;
 import com.google.inject.persist.Transactional;
@@ -49,6 +51,7 @@ public class SaleOrderLineBudgetServiceImpl implements SaleOrderLineBudgetServic
   protected SaleOrderLineRepository saleOrderLineRepo;
   protected AppBudgetService appBudgetService;
   protected BudgetToolsService budgetToolsService;
+  protected AnalyticLineModelService analyticLineModelService;
 
   @Inject
   public SaleOrderLineBudgetServiceImpl(
@@ -56,12 +59,14 @@ public class SaleOrderLineBudgetServiceImpl implements SaleOrderLineBudgetServic
       BudgetDistributionService budgetDistributionService,
       SaleOrderLineRepository saleOrderLineRepo,
       AppBudgetService appBudgetService,
-      BudgetToolsService budgetToolsService) {
+      BudgetToolsService budgetToolsService,
+      AnalyticLineModelService analyticLineModelService) {
     this.budgetService = budgetService;
     this.budgetDistributionService = budgetDistributionService;
     this.saleOrderLineRepo = saleOrderLineRepo;
     this.appBudgetService = appBudgetService;
     this.budgetToolsService = budgetToolsService;
+    this.analyticLineModelService = analyticLineModelService;
   }
 
   @Override
@@ -304,5 +309,16 @@ public class SaleOrderLineBudgetServiceImpl implements SaleOrderLineBudgetServic
                   saleOrder.getCompany().getId()));
     }
     return query;
+  }
+
+  @Override
+  public SaleOrderLine fillAndCompute(SaleOrderLine saleOrderLine, SaleOrder saleOrder)
+      throws AxelorException {
+    AnalyticLineBudgetModel analyticLineBudgetModel =
+        new AnalyticLineBudgetModel(saleOrderLine, saleOrder);
+
+    analyticLineModelService.getAndComputeAnalyticDistribution(analyticLineBudgetModel, false);
+
+    return saleOrderLine;
   }
 }
