@@ -35,10 +35,17 @@ import com.axelor.inject.Beans;
 import com.axelor.studio.db.AppSale;
 import com.google.common.base.Strings;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.persistence.PersistenceException;
+import org.apache.commons.collections.CollectionUtils;
 
 public class SaleOrderManagementRepository extends SaleOrderRepository {
+
+  protected static int sequence;
 
   @Override
   public SaleOrder copy(SaleOrder entity, boolean deep) {
@@ -81,8 +88,19 @@ public class SaleOrderManagementRepository extends SaleOrderRepository {
   @Override
   public SaleOrder save(SaleOrder saleOrder) {
     try {
+
       AppSale appSale = Beans.get(AppSaleService.class).getAppSale();
       SaleOrderComputeService saleOrderComputeService = Beans.get(SaleOrderComputeService.class);
+
+      SaleOrderService saleOrderService = Beans.get(SaleOrderService.class);
+      saleOrderService.updateSubLines(saleOrder);
+
+      List<SaleOrderLine> saleOrderLineList = saleOrder.getSaleOrderLineList();
+      if (!CollectionUtils.isEmpty(saleOrderLineList)) {
+        computeSequence(saleOrderLineList);
+        computeLevelIndicator(saleOrderLineList);
+        computeLevel(saleOrderLineList);
+      }
 
       if (appSale.getEnablePackManagement()) {
         saleOrderComputeService.computePackTotal(saleOrder);
@@ -93,11 +111,12 @@ public class SaleOrderManagementRepository extends SaleOrderRepository {
       computeFullName(saleOrder);
 
       if (appSale.getManagePartnerComplementaryProduct()) {
-        Beans.get(SaleOrderService.class).manageComplementaryProductSOLines(saleOrder);
+        saleOrderService.manageComplementaryProductSOLines(saleOrder);
       }
 
       computeSubMargin(saleOrder);
       Beans.get(SaleOrderMarginService.class).computeMarginSaleOrder(saleOrder);
+
       return super.save(saleOrder);
     } catch (Exception e) {
       TraceBackService.traceExceptionFromSaveMethod(e);
@@ -157,5 +176,108 @@ public class SaleOrderManagementRepository extends SaleOrderRepository {
       throw new PersistenceException(e.getMessage(), e);
     }
     super.remove(saleOrder);
+  }
+
+  public void computeSequence(List<SaleOrderLine> saleOrderLineList) {
+    saleOrderLineList.sort(Comparator.comparingLong(SaleOrderLine::getId));
+    Map<SaleOrderLine, List<SaleOrderLine>> map =
+        saleOrderLineList.stream()
+            .filter(line -> line.getParentSaleOrderLine() != null)
+            .collect(
+                Collectors.groupingBy(
+                    SaleOrderLine::getParentSaleOrderLine,
+                    Collectors.toCollection(ArrayList::new)));
+    sequence = 1;
+    for (SaleOrderLine saleOrderLine : saleOrderLineList) {
+      if (saleOrderLine.getParentSaleOrderLine() == null) {
+        setSequence(saleOrderLine, map);
+      }
+    }
+  }
+
+  protected void setSequence(
+      SaleOrderLine saleOrderLine, Map<SaleOrderLine, List<SaleOrderLine>> map) {
+    saleOrderLine.setSequence(sequence);
+    sequence++;
+    if (map.containsKey(saleOrderLine)) {
+      List<SaleOrderLine> subLineList = map.get(saleOrderLine);
+      for (SaleOrderLine subLine : subLineList) {
+        setSequence(subLine, map);
+      }
+    }
+  }
+
+  public void computeLevelIndicator(List<SaleOrderLine> saleOrderLineList) {
+    saleOrderLineList.stream().forEach(line -> line.setLevelIndicator(null));
+    saleOrderLineList.sort(Comparator.comparingLong(SaleOrderLine::getId));
+
+    Map<SaleOrderLine, List<SaleOrderLine>> map =
+        saleOrderLineList.stream()
+            .filter(
+                line ->
+                    line.getParentSaleOrderLine() != null
+                        && line.getTypeSelect() == SaleOrderLineRepository.TYPE_PARENT)
+            .collect(
+                Collectors.groupingBy(
+                    SaleOrderLine::getParentSaleOrderLine,
+                    Collectors.toCollection(ArrayList::new)));
+    int count = 1;
+    for (SaleOrderLine saleOrderLine : saleOrderLineList) {
+      if (saleOrderLine.getParentSaleOrderLine() == null
+          && saleOrderLine.getTypeSelect() == SaleOrderLineRepository.TYPE_PARENT) {
+        setLevelIndicator(saleOrderLine, String.valueOf(count), map);
+        count++;
+      }
+    }
+  }
+
+  protected void setLevelIndicator(
+      SaleOrderLine saleOrderLine,
+      String levelIndicator,
+      Map<SaleOrderLine, List<SaleOrderLine>> map) {
+    saleOrderLine.setLevelIndicator(levelIndicator);
+    if (map.containsKey(saleOrderLine)) {
+      List<SaleOrderLine> subLineList = map.get(saleOrderLine);
+      int count = 1;
+      for (SaleOrderLine subLine : subLineList) {
+        setLevelIndicator(subLine, String.format("%s.%s", levelIndicator, count), map);
+        count++;
+      }
+    }
+  }
+
+  public void computeLevel(List<SaleOrderLine> saleOrderLineList) {
+    for (SaleOrderLine saleOrderLine : saleOrderLineList) {
+      if (saleOrderLine.getParentSaleOrderLine() == null) {
+        int maxLevel = computeMaxLevel(saleOrderLine);
+        List<SaleOrderLine> lines =
+            Beans.get(SaleOrderService.class).getChildrenLines(saleOrderLine);
+        setLevel(lines, maxLevel + 1);
+      }
+    }
+  }
+
+  protected void setLevel(List<SaleOrderLine> lines, int maxLevel) {
+    for (SaleOrderLine saleOrderLine : lines) {
+      String levelIndicator = saleOrderLine.getLevelIndicator();
+      if (Strings.isNullOrEmpty(levelIndicator)) {
+        continue;
+      }
+      int length = levelIndicator.split("\\.").length;
+      saleOrderLine.setLevelNo(maxLevel - length);
+    }
+  }
+
+  protected int computeMaxLevel(SaleOrderLine saleOrderLine) {
+    int maxLevel = 0;
+    List<SaleOrderLine> subSoLineList = saleOrderLine.getSubSoLineList();
+    if (!CollectionUtils.isEmpty(subSoLineList)) {
+      for (SaleOrderLine line : subSoLineList) {
+        int subLevel = computeMaxLevel(line);
+        maxLevel = Math.max(maxLevel, subLevel);
+      }
+      maxLevel++;
+    }
+    return maxLevel;
   }
 }
