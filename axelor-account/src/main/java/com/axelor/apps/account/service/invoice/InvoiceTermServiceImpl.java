@@ -18,7 +18,6 @@
  */
 package com.axelor.apps.account.service.invoice;
 
-import com.axelor.apps.account.db.Account;
 import com.axelor.apps.account.db.AccountingSituation;
 import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.InvoicePayment;
@@ -1523,11 +1522,11 @@ public class InvoiceTermServiceImpl implements InvoiceTermService {
   }
 
   public BigDecimal getTotalInvoiceTermsAmount(MoveLine moveLine) {
-    return this.getTotalInvoiceTermsAmount(moveLine, null, true);
+    return this.getTotalInvoiceTermsAmount(moveLine, true);
   }
 
-  public BigDecimal getTotalInvoiceTermsAmount(
-      MoveLine moveLine, Account holdbackAccount, boolean holdback) {
+  @Override
+  public BigDecimal getTotalInvoiceTermsAmount(MoveLine moveLine, boolean holdback) {
     Move move = moveLine.getMove();
     BigDecimal total = moveLine.getCurrencyAmount().abs();
 
@@ -1537,8 +1536,7 @@ public class InvoiceTermServiceImpl implements InvoiceTermService {
             && moveLineIt.getCredit().signum() == moveLine.getCredit().signum()
             && moveLineIt.getAccount() != null
             && moveLineIt.getAccount().getUseForPartnerBalance()
-            && (holdback
-                || (holdbackAccount != null && !moveLineIt.getAccount().equals(holdbackAccount)))) {
+            && (holdback || moveLineIt.getIsHoldback())) {
           total = total.add(moveLineIt.getCurrencyAmount().abs());
         }
       }

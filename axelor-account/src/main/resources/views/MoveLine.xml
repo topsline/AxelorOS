@@ -467,7 +467,9 @@
         <field name="currencyRate"
           onChange="action-move-line-method-currency-amount-rate-onchange"
           readonlyIf="!isOtherCurrency"/>
-        <field name="taxAmount" hidden="true" x-scale="companyCurrencyDecimals"/>
+        <field name="isHoldback" colSpan="3"
+          onChange="action-move-line-method-is-holdback-onchange"/>
+        <field name="taxAmount" colSpan="3" hidden="true" x-scale="companyCurrencyDecimals"/>
       </panel>
     </panel>
 
@@ -636,6 +638,7 @@
       </panel>
     </panel-tabs>
   </form>
+
   <form name="move-line-form" title="Move line" model="com.axelor.apps.account.db.MoveLine"
     onNew="action-move-line-method-onnew" canNew="false" canDelete="false" canEdit="false"
     onLoad="action-move-line-method-onload" canArchive="false">
@@ -861,6 +864,10 @@
   <action-method name="action-move-line-method-analytic-move-line-onchange">
     <call class="com.axelor.apps.account.web.MoveLineController"
       method="analyticMoveLineOnChange"/>
+  </action-method>
+
+  <action-method name="action-move-line-method-is-holdback-onchange">
+    <call class="com.axelor.apps.account.web.MoveLineController" method="isHoldbackOnChange"/>
   </action-method>
 
   <action-record name="action-account-move-line-record-calculate-balance"

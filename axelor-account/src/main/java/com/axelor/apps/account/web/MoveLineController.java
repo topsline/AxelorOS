@@ -63,6 +63,7 @@ import com.google.inject.Singleton;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -717,7 +718,16 @@ public class MoveLineController {
   protected Move getMove(ActionRequest request, MoveLine moveLine) {
     Context parentContext = request.getContext().getParent();
     if (parentContext != null && Move.class.equals(parentContext.getContextClass())) {
-      return parentContext.asType(Move.class);
+      Move move = parentContext.asType(Move.class);
+
+      if (CollectionUtils.isEmpty(move.getMoveLineList())) {
+        move.setMoveLineList(new ArrayList<>());
+      } else {
+        move.getMoveLineList().remove(moveLine);
+        move.getMoveLineList().add(moveLine);
+      }
+
+      return move;
     } else {
       return moveLine.getMove();
     }
@@ -752,6 +762,18 @@ public class MoveLineController {
 
       response.setValues(moveLineGroupService.getAnalyticMoveLineOnChangeValuesMap(moveLine, move));
       response.setAttrs(moveLineGroupService.getAnalyticMoveLineOnChangeAttrsMap(moveLine, move));
+    } catch (Exception e) {
+      TraceBackService.trace(response, e, ResponseMessageType.ERROR);
+    }
+  }
+
+  public void isHoldbackOnChange(ActionRequest request, ActionResponse response) {
+    try {
+      MoveLine moveLine = request.getContext().asType(MoveLine.class);
+      Move move = this.getMove(request, moveLine);
+
+      response.setValues(
+          Beans.get(MoveLineGroupService.class).getIsHoldbackOnChangeValuesMap(moveLine, move));
     } catch (Exception e) {
       TraceBackService.trace(response, e, ResponseMessageType.ERROR);
     }
