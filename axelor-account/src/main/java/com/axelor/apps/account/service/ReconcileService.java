@@ -27,6 +27,7 @@ import com.axelor.apps.base.AxelorException;
 import com.axelor.apps.base.db.Partner;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public interface ReconcileService {
 
@@ -107,7 +108,8 @@ public interface ReconcileService {
       List<InvoiceTerm> invoiceTermList,
       InvoicePayment invoicePayment,
       BigDecimal amount,
-      Reconcile reconcile)
+      Reconcile reconcile,
+      Map<InvoiceTerm, Integer> invoiceTermPfpValidateStatusSelectMap)
       throws AxelorException;
 
   void checkReconcile(Reconcile reconcile) throws AxelorException;

@@ -21,10 +21,12 @@ package com.axelor.apps.account.service.move;
 import com.axelor.apps.account.db.Account;
 import com.axelor.apps.account.db.AccountConfig;
 import com.axelor.apps.account.db.Invoice;
+import com.axelor.apps.account.db.InvoiceTerm;
 import com.axelor.apps.account.db.Journal;
 import com.axelor.apps.account.db.Move;
 import com.axelor.apps.account.db.MoveLine;
 import com.axelor.apps.account.db.Reconcile;
+import com.axelor.apps.account.db.repo.InvoiceTermRepository;
 import com.axelor.apps.account.db.repo.JournalRepository;
 import com.axelor.apps.account.db.repo.MoveRepository;
 import com.axelor.apps.account.exception.AccountExceptionMessage;
@@ -260,6 +262,11 @@ public class MoveCreateFromInvoiceServiceImpl implements MoveCreateFromInvoiceSe
    */
   @Override
   public Move createMoveUseInvoiceDue(Invoice invoice) throws AxelorException {
+    if (invoice.getInvoiceTermList().stream()
+        .allMatch(
+            it -> it.getPfpValidateStatusSelect() == InvoiceTermRepository.PFP_STATUS_LITIGATION)) {
+      return null;
+    }
 
     Company company = invoice.getCompany();
     Move move = null;
@@ -443,7 +450,17 @@ public class MoveCreateFromInvoiceServiceImpl implements MoveCreateFromInvoiceSe
 
     if (oDmove != null) {
       BigDecimal totalDebitAmount = moveToolService.getTotalDebitAmount(debitMoveLines);
-      BigDecimal amount = totalDebitAmount.min(invoiceCustomerMoveLine.getCredit());
+      BigDecimal invoiceAmount =
+          invoiceCustomerMoveLine.getInvoiceTermList().stream()
+              .filter(
+                  it ->
+                      it.getPfpValidateStatusSelect()
+                          != InvoiceTermRepository.PFP_STATUS_LITIGATION)
+              .map(InvoiceTerm::getCompanyAmount)
+              .reduce(BigDecimal::add)
+              .orElse(invoiceCustomerMoveLine.getCredit());
+
+      BigDecimal amount = totalDebitAmount.min(invoiceAmount);
 
       BigDecimal moveLineAmount =
           moveToolService
