@@ -603,10 +603,13 @@ public class MoveLineCreateServiceImpl implements MoveLineCreateService {
     newOrUpdatedMoveLine.setOrigin(move.getOrigin());
     newOrUpdatedMoveLine.setDescription(move.getDescription());
 
-    newOrUpdatedMoveLine.setDebit(
-        newOrUpdatedMoveLine.getDebit().add(debit.multiply(taxLine.getValue())));
-    newOrUpdatedMoveLine.setCredit(
-        newOrUpdatedMoveLine.getCredit().add(credit.multiply(taxLine.getValue())));
+    BigDecimal newMoveLineDebit =
+        newOrUpdatedMoveLine.getDebit().add(debit.multiply(taxLine.getValue()));
+    BigDecimal newMoveLineCredit =
+        newOrUpdatedMoveLine.getCredit().add(credit.multiply(taxLine.getValue()));
+
+    this.setTaxLineAmount(newMoveLineDebit, newMoveLineCredit, newOrUpdatedMoveLine);
+
     newOrUpdatedMoveLine.setOriginDate(move.getOriginDate());
     newOrUpdatedMoveLine = moveLineToolService.setCurrencyAmount(newOrUpdatedMoveLine);
 
@@ -617,9 +620,35 @@ public class MoveLineCreateServiceImpl implements MoveLineCreateService {
     if (newOrUpdatedMoveLine.getDebit().signum() != 0
         || newOrUpdatedMoveLine.getCredit().signum() != 0) {
       newMap.put(newSourceTaxLineKey, newOrUpdatedMoveLine);
+    } else if (newOrUpdatedMoveLine
+            .getDebit()
+            .add(newOrUpdatedMoveLine.getCredit())
+            .compareTo(BigDecimal.ZERO)
+        == 0) {
+      newMap.remove(newSourceTaxLineKey, newOrUpdatedMoveLine);
     }
 
     return newOrUpdatedMoveLine;
+  }
+
+  protected void setTaxLineAmount(BigDecimal debit, BigDecimal credit, MoveLine moveLine) {
+    if ((debit.compareTo(BigDecimal.ZERO) > 0
+            && moveLine.getCredit().compareTo(BigDecimal.ZERO) > 0)
+        || (credit.compareTo(BigDecimal.ZERO) > 0
+            && moveLine.getDebit().compareTo(BigDecimal.ZERO) > 0)) {
+      BigDecimal taxLineAmount = debit.subtract(credit);
+
+      if (taxLineAmount.compareTo(BigDecimal.ZERO) > 0) {
+        moveLine.setDebit(taxLineAmount);
+        moveLine.setCredit(BigDecimal.ZERO);
+      } else {
+        moveLine.setDebit(BigDecimal.ZERO);
+        moveLine.setCredit(taxLineAmount.abs());
+      }
+    } else {
+      moveLine.setDebit(moveLine.getDebit().add(debit));
+      moveLine.setCredit(moveLine.getCredit().add(credit));
+    }
   }
 
   protected MoveLine createMoveLine(LocalDate date, TaxLine taxLine, Account account, Move move)
