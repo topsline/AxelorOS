@@ -587,24 +587,23 @@ public class BillOfMaterialServiceImpl implements BillOfMaterialService {
   public BillOfMaterial getEligibleBillOfMaterialOfProductInMrpLine(
       MrpLine mrpLine, Product product) throws AxelorException {
 
-    if(mrpLine == null){
+    if (mrpLine == null) {
       return null;
     }
 
     BillOfMaterial billOfMaterial = mrpLine.getBillOfMaterial();
-    if(billOfMaterial != null){
+    if (billOfMaterial != null) {
       return billOfMaterial;
     }
 
-    if(product == null){
+    if (product == null) {
       return null;
     }
 
     StockLocation stockLocation = mrpLine.getStockLocation();
     Optional<SaleOrderLine> saleOrderLineOpt =
         MrpLineTool.getOriginSaleOrderLineInMrpLineOrigin(mrpLine);
-    billOfMaterial =
-        saleOrderLineOpt.map(SaleOrderLine::getBillOfMaterial).orElse(null);
+    billOfMaterial = saleOrderLineOpt.map(SaleOrderLine::getBillOfMaterial).orElse(null);
 
     if (billOfMaterial != null && billOfMaterial.getProduct().equals(product)) {
       return billOfMaterial;
