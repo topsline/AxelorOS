@@ -555,4 +555,12 @@ public class PaymentSessionValidateBankPaymentServiceImpl
       }
     }
   }
+
+  @Override
+  public String getMoveOrigin(PaymentSession paymentSession) {
+    if (paymentSession.getBankOrder() != null) {
+      return paymentSession.getBankOrder().getBankOrderSeq();
+    }
+    return super.getMoveOrigin(paymentSession);
+  }
 }
