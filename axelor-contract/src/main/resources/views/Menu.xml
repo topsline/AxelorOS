@@ -154,6 +154,31 @@
     <domain>self.concernedModel.name = 'InvoiceLine'</domain>
   </action-view>
 
+  <menuitem name="contracts-conf-customer-partner-price-list"
+    parent="contracts-root-conf-all" title="Customer price lists"
+    action="contracts.conf.customer.partner.price.list" order="800"/>
+
+  <action-view name="contracts.conf.customer.partner.price.list"
+    title="Partner price lists" model="com.axelor.apps.base.db.PartnerPriceList">
+    <view type="grid" name="partner-price-list-grid"/>
+    <view type="form" name="partner-price-list-form"/>
+    <domain>self.typeSelect = 3</domain>
+    <context name="_typeSelect" expr="eval: 3"/>
+  </action-view>
+
+  <menuitem name="contracts-conf-supplier-partner-price-list"
+    parent="contracts-root-conf-all" title="Supplier price lists"
+    action="contracts.conf.supplier.partner.price.list" order="900"/>
+
+  <action-view name="contracts.conf.supplier.partner.price.list"
+    title="Partner price lists" model="com.axelor.apps.base.db.PartnerPriceList">
+    <view type="grid" name="partner-price-list-grid"/>
+    <view type="form" name="partner-price-list-form"/>
+    <domain>self.typeSelect = 4</domain>
+    <context name="_typeSelect" expr="eval: 4"/>
+  </action-view>
+
+
   <menuitem name="admin-root-batch-contract" parent="admin-root-batch"
     title="Contract batches" action="admin.root.batch.contract"
     if="__config__.app.isApp('contract')" order="1200"/>
