@@ -375,6 +375,7 @@ public class StockMoveServiceImpl implements StockMoveService {
     if (stockMove.getExTaxTotal().compareTo(BigDecimal.ZERO) == 0) {
       stockMove.setExTaxTotal(stockMoveToolService.compute(stockMove));
     }
+    stockMove.setGrossMass(stockMoveToolService.computeGrossMass(stockMove));
 
     // This call will split move line by tracking number
     // But only works if the line has not been already splited
@@ -786,6 +787,7 @@ public class StockMoveServiceImpl implements StockMoveService {
                 + stockMove.getStockMoveSeq()
                 + " )"));
     newStockMove.setExTaxTotal(stockMoveToolService.compute(newStockMove));
+    newStockMove.setGrossMass(stockMoveToolService.computeGrossMass(newStockMove));
 
     plan(newStockMove);
     newStockMove.setStockMoveOrigin(stockMove);
@@ -905,7 +907,7 @@ public class StockMoveServiceImpl implements StockMoveService {
     newStockMove.setNote(stockMove.getNote());
     newStockMove.setNumOfPackages(stockMove.getNumOfPackages());
     newStockMove.setNumOfPalettes(stockMove.getNumOfPalettes());
-    newStockMove.setGrossMass(stockMove.getGrossMass());
+    newStockMove.setGrossMass(stockMoveToolService.computeGrossMass(newStockMove));
     newStockMove.setExTaxTotal(stockMoveToolService.compute(newStockMove));
     newStockMove.setIsWithBackorder(stockMove.getIsWithBackorder());
     newStockMove.setOrigin(stockMove.getOrigin());
@@ -1081,6 +1083,8 @@ public class StockMoveServiceImpl implements StockMoveService {
     if (!newStockMove.getStockMoveLineList().isEmpty()) {
       newStockMove.setExTaxTotal(stockMoveToolService.compute(newStockMove));
       originalStockMove.setExTaxTotal(stockMoveToolService.compute(originalStockMove));
+      newStockMove.setGrossMass(stockMoveToolService.computeGrossMass(newStockMove));
+      originalStockMove.setGrossMass(stockMoveToolService.computeGrossMass(originalStockMove));
       newStockMove = stockMoveRepo.save(newStockMove);
       if (originalStatusSelect == StockMoveRepository.STATUS_PLANNED) {
         plan(originalStockMove);
