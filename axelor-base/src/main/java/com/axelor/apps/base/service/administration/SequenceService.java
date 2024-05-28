@@ -166,9 +166,11 @@ public class SequenceService {
   /**
    * Method returning a sequence number from a given generic sequence and a date
    *
-   * @param sequence
-   * @param refDate
-   * @return
+   * @param objectClass
+   * @param fieldName
+   * @param nextSeq
+   * @param seq
+   * @throws AxelorException
    */
   protected void isSequenceAlreadyExisting(
       Class objectClass, String fieldName, String nextSeq, Sequence seq) throws AxelorException {
@@ -385,7 +387,7 @@ public class SequenceService {
   /**
    * Get draft sequence number prefix.
    *
-   * @return
+   * @return draft prefix
    */
   protected String getDraftPrefix() {
     return Optional.ofNullable(appBaseService.getAppBase().getDraftPrefix()).orElse(DRAFT_PREFIX);
@@ -395,7 +397,7 @@ public class SequenceService {
    * Get draft sequence number.
    *
    * @param model
-   * @return
+   * @return draft sequence number
    * @throws AxelorException
    */
   public String getDraftSequenceNumber(Model model) throws AxelorException {
@@ -413,8 +415,9 @@ public class SequenceService {
    * Get draft sequence number with leading zeros.
    *
    * @param model
-   * @param zeroPadding
-   * @return
+   * @param padding
+   * @return draft sequence number
+   * @throws AxelorException
    */
   public String getDraftSequenceNumber(Model model, int padding) throws AxelorException {
     if (model.getId() == null) {
@@ -435,7 +438,7 @@ public class SequenceService {
    * <p>Also consider '*' as draft character for backward compatibility.
    *
    * @param sequenceNumber
-   * @return
+   * @return true if sequence number is empty or draft, else false
    */
   public boolean isEmptyOrDraftSequenceNumber(String sequenceNumber) {
     return Strings.isNullOrEmpty(sequenceNumber)
@@ -446,6 +449,7 @@ public class SequenceService {
    * Computes sequence full name
    *
    * @param sequence Sequence to compute full name
+   * @return sequence full name
    */
   public String computeFullName(Sequence sequence) {
     StringBuilder fn = new StringBuilder();
