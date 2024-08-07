@@ -816,27 +816,22 @@ public class PaymentVoucherConfirmService {
     String invoiceName = this.getInvoiceName(moveLineToPay, payVoucherElementToPay);
 
     InvoiceTerm invoiceTerm = payVoucherElementToPay.getInvoiceTerm();
-    BigDecimal ratio =
-        currencyService.computeScaledExchangeRate(
-            invoiceTerm.getCompanyAmount(), invoiceTerm.getAmount());
+    BigDecimal currencyRate =
+        currencyService.getCurrencyConversionRate(
+            invoiceTerm.getCurrency(), invoiceTerm.getCompanyCurrency(), paymentDate);
+    BigDecimal invoiceTermCurrencyRate =
+        currencyService.getCurrencyConversionRate(
+            invoiceTerm.getCurrency(),
+            invoiceTerm.getCompanyCurrency(),
+            invoiceTerm.getInvoice().getInvoiceDate());
+    BigDecimal currencyAmount =
+        payVoucherElementToPay
+            .getAmountToPayCurrency()
+            .add(payVoucherElementToPay.getFinancialDiscountTotalAmount());
+
     BigDecimal companyAmountToPay =
         currencyScaleService.getCompanyScaledValue(
-            payVoucherElementToPay.getPaymentVoucher(),
-            (payVoucherElementToPay
-                    .getAmountToPayCurrency()
-                    .add(payVoucherElementToPay.getFinancialDiscountTotalAmount()))
-                .multiply(ratio));
-
-    BigDecimal currencyRate = invoiceTerm.getMoveLine().getCurrencyRate();
-
-    companyAmountToPay =
-        invoiceTermService.adjustAmountInCompanyCurrency(
-            moveLineToPay.getInvoiceTermList(),
-            moveLineToPay.getAmountRemaining(),
-            companyAmountToPay,
-            amountToPay,
-            moveLineToPay.getCurrencyRate(),
-            moveLineToPay.getMove().getCompany());
+            payVoucherElementToPay.getPaymentVoucher(), currencyAmount.multiply(currencyRate));
 
     MoveLine moveLine =
         moveLineCreateService.createMoveLine(
@@ -859,6 +854,15 @@ public class PaymentVoucherConfirmService {
     moveLineInvoiceTermService.generateDefaultInvoiceTerm(
         paymentMove, moveLine, paymentDate, false);
 
+    companyAmountToPay =
+        this.computeForeignExchangeCompanyAmount(
+            currencyRate,
+            invoiceTermCurrencyRate,
+            companyAmountToPay,
+            currencyAmount,
+            paymentDate,
+            invoiceTerm);
+
     Reconcile reconcile =
         reconcileService.createReconcile(moveLineToPay, moveLine, companyAmountToPay, true);
     if (reconcile != null) {
@@ -875,5 +879,21 @@ public class PaymentVoucherConfirmService {
     } else {
       return payVoucherElementToPay.getPaymentVoucher().getRef();
     }
+  }
+
+  protected BigDecimal computeForeignExchangeCompanyAmount(
+      BigDecimal paymentCurrencyRate,
+      BigDecimal invoiceTermCurrencyRate,
+      BigDecimal companyAmount,
+      BigDecimal currencyAmount,
+      LocalDate paymentDate,
+      InvoiceTerm invoiceTerm)
+      throws AxelorException {
+    if (paymentCurrencyRate.compareTo(invoiceTermCurrencyRate) > 0) {
+      return currencyService.getAmountCurrencyConvertedAtDate(
+          invoiceTerm.getCurrency(), invoiceTerm.getCompanyCurrency(), currencyAmount, paymentDate);
+    }
+
+    return companyAmount;
   }
 }
