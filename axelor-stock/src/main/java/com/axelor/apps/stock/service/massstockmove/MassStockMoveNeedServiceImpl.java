@@ -4,6 +4,7 @@ import com.axelor.apps.base.db.Product;
 import com.axelor.apps.stock.db.MassStockMove;
 import com.axelor.apps.stock.db.MassStockMoveNeed;
 import com.axelor.apps.stock.db.repo.MassStockMoveNeedRepository;
+import com.axelor.apps.stock.db.repo.StockLocationLineRepository;
 import com.axelor.apps.stock.db.repo.StockMoveLineRepository;
 import com.google.inject.Inject;
 import com.google.inject.persist.Transactional;
@@ -15,13 +16,16 @@ public class MassStockMoveNeedServiceImpl implements MassStockMoveNeedService {
 
   protected final StockMoveLineRepository stockMoveLineRepository;
   protected final MassStockMoveNeedRepository massStockMoveNeedRepository;
+  protected final StockLocationLineRepository stockLocationLineRepository;
 
   @Inject
   public MassStockMoveNeedServiceImpl(
       StockMoveLineRepository stockMoveLineRepository,
-      MassStockMoveNeedRepository massStockMoveNeedRepository) {
+      MassStockMoveNeedRepository massStockMoveNeedRepository,
+      StockLocationLineRepository stockLocationLineRepository) {
     this.stockMoveLineRepository = stockMoveLineRepository;
     this.massStockMoveNeedRepository = massStockMoveNeedRepository;
+    this.stockLocationLineRepository = stockLocationLineRepository;
   }
 
   @Override
