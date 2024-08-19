@@ -27,11 +27,10 @@ import com.axelor.apps.base.interfaces.OrderLineTax;
 import com.axelor.apps.base.interfaces.PricedOrder;
 import com.axelor.apps.base.interfaces.PricedOrderLine;
 import com.axelor.apps.base.service.CurrencyScaleService;
-import com.axelor.apps.base.service.app.AppBaseService;
+import com.axelor.inject.Beans;
 import com.google.common.base.Joiner;
 import com.google.inject.Inject;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Optional;
 import java.util.Set;
 
@@ -65,25 +64,34 @@ public class OrderLineTaxServiceImpl implements OrderLineTaxService {
     }
   }
 
+  /**
+   * compute each OrderLineTax
+   *
+   * @param orderLineTax
+   * @param currency
+   * @param sumOfAllDeductibleRateValue
+   * @param sumOfAllNonDeductibleRateValue
+   */
   @Override
-  public void computeTax(OrderLineTax orderLineTax, Currency currency) {
+  public void computeTax(
+      OrderLineTax orderLineTax,
+      Currency currency,
+      BigDecimal sumOfAllDeductibleRateValue,
+      BigDecimal sumOfAllNonDeductibleRateValue) {
     BigDecimal exTaxBase = orderLineTax.getExTaxBase().abs();
-    BigDecimal taxTotal = BigDecimal.ZERO;
     int currencyScale = currencyScaleService.getCurrencyScale(currency);
+    Boolean isNonDeductibleTax = orderLineTax.getTaxLine().getTax().getIsNonDeductibleTax();
+    BigDecimal originalTaxRateValue = orderLineTax.getTaxLine().getValue();
+    BigDecimal adjustedTaxValue =
+        Beans.get(TaxService.class)
+            .computeAdjustedTaxValue(
+                isNonDeductibleTax,
+                originalTaxRateValue,
+                sumOfAllDeductibleRateValue,
+                sumOfAllNonDeductibleRateValue);
+    BigDecimal taxTotal = exTaxBase.multiply(adjustedTaxValue);
+    orderLineTax.setTaxTotal(currencyScaleService.getScaledValue(taxTotal, currencyScale));
 
-    if (orderLineTax.getTaxLine() != null) {
-      taxTotal =
-          exTaxBase.multiply(
-              orderLineTax
-                  .getTaxLine()
-                  .getValue()
-                  .divide(
-                      new BigDecimal(100),
-                      AppBaseService.COMPUTATION_SCALING,
-                      RoundingMode.HALF_UP));
-      orderLineTax.setTaxTotal(currencyScaleService.getScaledValue(taxTotal, currencyScale));
-      orderLineTax.setPercentageTaxTotal(orderLineTax.getTaxTotal());
-    }
     orderLineTax.setInTaxTotal(
         currencyScaleService.getScaledValue(exTaxBase.add(taxTotal), currencyScale));
   }

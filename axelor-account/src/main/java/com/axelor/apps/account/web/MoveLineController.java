@@ -683,4 +683,23 @@ public class MoveLineController {
       TraceBackService.trace(response, e, ResponseMessageType.ERROR);
     }
   }
+
+  public void computeTaxLineSetDomainOnSelect(ActionRequest request, ActionResponse response) {
+    Context context = request.getContext();
+    Map<String, Object> _parent = (Map<String, Object>) context.get("_parent");
+    int functionalOriginSelect;
+    Object functionalOriginSelectObj = _parent.get("functionalOriginSelect");
+    if (functionalOriginSelectObj != null) {
+      functionalOriginSelect = (Integer) functionalOriginSelectObj;
+    } else {
+      functionalOriginSelect = -1;
+    }
+    String dateString = (String) _parent.get("date");
+
+    MoveLineService moveLineService = Beans.get(MoveLineService.class);
+    String domainString =
+        moveLineService.computeMoveLineTaxLineSetDomain(functionalOriginSelect, dateString);
+
+    response.setAttr("taxLineSet", "domain", domainString);
+  }
 }

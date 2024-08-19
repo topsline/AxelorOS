@@ -29,7 +29,11 @@ public interface OrderLineTaxService {
 
   boolean isCustomerSpecificNote(PricedOrder pricedOrder);
 
-  void computeTax(OrderLineTax orderLineTax, Currency currency);
+  void computeTax(
+      OrderLineTax orderLineTax,
+      Currency currency,
+      BigDecimal sumOfAllDeductibleRateValue,
+      BigDecimal sumOfAllNonDeductibleRateValue);
 
   void setSpecificNotes(
       boolean customerSpecificNote,

@@ -29,6 +29,7 @@ import com.axelor.apps.sale.db.SaleOrderLineTax;
 import com.axelor.common.ObjectUtils;
 import com.google.inject.Inject;
 import java.lang.invoke.MethodHandles;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -146,9 +147,15 @@ public class SaleOrderLineCreateTaxLineServiceImpl implements SaleOrderLineCreat
       List<SaleOrderLineTax> saleOrderLineTaxList,
       Currency currency,
       List<SaleOrderLineTax> currentSaleOrderLineTaxList) {
+    BigDecimal sumOfAllDeductibleRateValue = BigDecimal.ZERO;
+    for (SaleOrderLineTax saleOrderLineTax : map.values()) {
+      sumOfAllDeductibleRateValue =
+          sumOfAllDeductibleRateValue.add(saleOrderLineTax.getTaxLine().getValue());
+    }
     for (SaleOrderLineTax saleOrderLineTax : map.values()) {
       // Dans la devise de la facture
-      orderLineTaxService.computeTax(saleOrderLineTax, currency);
+      orderLineTaxService.computeTax(
+          saleOrderLineTax, currency, sumOfAllDeductibleRateValue, BigDecimal.ZERO);
       SaleOrderLineTax oldSaleOrderLineTax =
           getExistingSaleOrderLineTax(saleOrderLineTax, currentSaleOrderLineTaxList);
       if (oldSaleOrderLineTax == null) {

@@ -22,6 +22,7 @@ import com.axelor.apps.account.db.Account;
 import com.axelor.apps.account.db.AnalyticDistributionTemplate;
 import com.axelor.apps.account.db.MoveTemplate;
 import com.axelor.apps.account.db.MoveTemplateLine;
+import com.axelor.apps.account.db.Tax;
 import com.axelor.apps.account.db.repo.AccountRepository;
 import com.axelor.apps.account.db.repo.AccountTypeRepository;
 import com.axelor.apps.account.db.repo.MoveTemplateLineRepository;
@@ -37,6 +38,7 @@ import com.axelor.apps.base.ResponseMessageType;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.repo.TraceBackRepository;
 import com.axelor.apps.base.service.exception.TraceBackService;
+import com.axelor.apps.base.service.tax.TaxService;
 import com.axelor.common.ObjectUtils;
 import com.axelor.db.Model;
 import com.axelor.i18n.I18n;
@@ -50,6 +52,7 @@ import com.google.inject.Singleton;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Singleton
@@ -346,5 +349,20 @@ public class AccountController {
     actionViewBuilder.context("moveTemplateIds", moveTemplateIdList);
 
     response.setView(actionViewBuilder.map());
+  }
+
+  public void checkTaxesNotOnlyNonDeductibleTaxes(ActionRequest request, ActionResponse response)
+      throws AxelorException {
+    Account account = request.getContext().asType(Account.class);
+    Set<Tax> defaultTaxSet = account.getDefaultTaxSet();
+    TaxService taxService = Beans.get(TaxService.class);
+    boolean checkResult = taxService.checkTaxesNotOnlyNonDeductibleTaxes(defaultTaxSet);
+    if (!checkResult) {
+      throw new AxelorException(
+          TraceBackRepository.CATEGORY_INCONSISTENCY,
+          I18n.get(
+              "Only one non-deductible tax is configured on the product/account %s. A non deductible tax should always be paired with at least one other deductible tax."),
+          Optional.of(account).map(Account::getLabel).orElse(null));
+    }
   }
 }

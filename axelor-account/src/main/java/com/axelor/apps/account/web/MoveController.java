@@ -46,6 +46,7 @@ import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.repo.TraceBackRepository;
 import com.axelor.apps.base.service.exception.ErrorException;
 import com.axelor.apps.base.service.exception.TraceBackService;
+import com.axelor.apps.base.service.tax.TaxService;
 import com.axelor.auth.AuthUtils;
 import com.axelor.auth.db.User;
 import com.axelor.common.ObjectUtils;
@@ -939,5 +940,22 @@ public class MoveController {
     actionViewBuilder.context("_moveId", move.getId());
 
     response.setView(actionViewBuilder.map());
+  }
+
+  public void checkTaxLinesNotOnlyNonDeductibleTaxes(ActionRequest request, ActionResponse response)
+      throws AxelorException {
+    Move move = request.getContext().asType(Move.class);
+    TaxService taxService = Beans.get(TaxService.class);
+    List<MoveLine> moveLineList = move.getMoveLineList();
+    for (MoveLine moveLine : moveLineList) {
+      try {
+        taxService.checkTaxLinesNotOnlyNonDeductibleTaxes(moveLine.getTaxLineSet());
+      } catch (AxelorException e) {
+        throw new AxelorException(
+            TraceBackRepository.CATEGORY_INCONSISTENCY,
+            I18n.get(AccountExceptionMessage.TAX_ONLY_NON_DEDUCTIBLE_TAXES_SELECTED_ERROR1),
+            Optional.of(moveLine).map(MoveLine::getAccount).map(Account::getLabel).orElse(null));
+      }
+    }
   }
 }

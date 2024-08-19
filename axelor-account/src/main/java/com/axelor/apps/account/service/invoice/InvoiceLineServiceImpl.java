@@ -28,6 +28,7 @@ import com.axelor.apps.account.db.TaxLine;
 import com.axelor.apps.account.db.repo.AccountConfigRepository;
 import com.axelor.apps.account.db.repo.InvoiceLineRepository;
 import com.axelor.apps.account.db.repo.InvoiceRepository;
+import com.axelor.apps.account.db.repo.TaxLineRepository;
 import com.axelor.apps.account.service.AccountManagementAccountService;
 import com.axelor.apps.account.service.app.AppAccountService;
 import com.axelor.apps.account.service.config.AccountConfigService;
@@ -49,7 +50,9 @@ import com.axelor.apps.base.service.ProductCompanyService;
 import com.axelor.apps.base.service.app.AppBaseService;
 import com.axelor.apps.base.service.tax.TaxService;
 import com.axelor.common.ObjectUtils;
+import com.axelor.db.JPA;
 import com.axelor.studio.db.AppInvoice;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import java.math.BigDecimal;
@@ -62,6 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 
 public class InvoiceLineServiceImpl implements InvoiceLineService {
@@ -76,6 +80,7 @@ public class InvoiceLineServiceImpl implements InvoiceLineService {
   protected AccountConfigService accountConfigService;
   protected InvoiceLineAnalyticService invoiceLineAnalyticService;
   protected TaxService taxService;
+  protected TaxLineRepository taxLineRepository;
   protected InternationalService internationalService;
   protected InvoiceLineAttrsService invoiceLineAttrsService;
   protected CurrencyScaleService currencyScaleService;
@@ -94,7 +99,8 @@ public class InvoiceLineServiceImpl implements InvoiceLineService {
       TaxService taxService,
       InternationalService internationalService,
       InvoiceLineAttrsService invoiceLineAttrsService,
-      CurrencyScaleService currencyScaleService) {
+      CurrencyScaleService currencyScaleService,
+      TaxLineRepository taxLineRepository) {
     this.accountManagementAccountService = accountManagementAccountService;
     this.currencyService = currencyService;
     this.priceListService = priceListService;
@@ -108,6 +114,7 @@ public class InvoiceLineServiceImpl implements InvoiceLineService {
     this.internationalService = internationalService;
     this.invoiceLineAttrsService = invoiceLineAttrsService;
     this.currencyScaleService = currencyScaleService;
+    this.taxLineRepository = taxLineRepository;
   }
 
   @Override
@@ -723,6 +730,14 @@ public class InvoiceLineServiceImpl implements InvoiceLineService {
     BigDecimal taxValue =
         Optional.of(invoiceLine)
             .map(InvoiceLine::getTaxLineSet)
+            .map(
+                taxLineSet ->
+                    taxLineSet.stream()
+                        .filter(
+                            taxLine ->
+                                taxLine.getTax() != null
+                                    && !taxLine.getTax().getIsNonDeductibleTax())
+                        .collect(Collectors.toSet()))
             .map(taxService::getTotalTaxRateInPercentage)
             .map(
                 it ->
@@ -745,5 +760,25 @@ public class InvoiceLineServiceImpl implements InvoiceLineService {
     invoiceLineAttrsService.addCoefficientScale(invoice, attrsMap, "");
 
     return attrsMap;
+  }
+
+  @Override
+  public String computeInvoiceLineTaxLineSetDomain(int operationTypeSelect) {
+    LocalDate todayDate = LocalDate.now();
+    String domain = "(self.endDate > :date OR self.endDate IS NULL) ";
+    if (operationTypeSelect == 3 || operationTypeSelect == 4) {
+      domain += " AND self.tax.isNonDeductibleTax = false ";
+    }
+
+    try {
+      List<Long> taxLineIds =
+          JPA.em()
+              .createQuery(" select self.id from TaxLine self where " + domain, Long.class)
+              .setParameter("date", todayDate)
+              .getResultList();
+      return "self.id in (" + Joiner.on(",").join(taxLineIds) + ")";
+    } catch (Exception e) {
+      return "self.id = -1";
+    }
   }
 }
