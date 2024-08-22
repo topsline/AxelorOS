@@ -18,13 +18,25 @@
  */
 package com.axelor.apps.sale.service;
 
+import com.axelor.apps.base.AxelorException;
 import com.axelor.apps.base.db.Product;
+import com.axelor.apps.base.db.repo.TraceBackRepository;
 import com.axelor.apps.sale.db.Cart;
 import com.axelor.apps.sale.db.CartLine;
+import com.axelor.apps.sale.db.SaleOrder;
+import com.axelor.apps.sale.db.SaleOrderLine;
 import com.axelor.apps.sale.db.repo.CartRepository;
+import com.axelor.apps.sale.db.repo.SaleOrderLineRepository;
+import com.axelor.apps.sale.exception.SaleExceptionMessage;
+import com.axelor.apps.sale.service.saleorder.SaleOrderLineGeneratorService;
 import com.axelor.auth.AuthUtils;
+import com.axelor.i18n.I18n;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Inject;
 import com.google.inject.persist.Transactional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 
 public class CartServiceImpl implements CartService {
@@ -32,15 +44,25 @@ public class CartServiceImpl implements CartService {
   protected CartRepository cartRepository;
   protected CartInitValueService cartInitValueService;
   protected CartLineService cartLineService;
+  protected SaleOrderGeneratorService saleOrderGeneratorService;
+  protected SaleOrderLineGeneratorService saleOrderLineGeneratorService;
+  protected SaleOrderLineRepository saleOrderLineRepository;
 
   @Inject
   public CartServiceImpl(
       CartRepository cartRepository,
       CartInitValueService cartInitValueService,
-      CartLineService cartLineService) {
+      CartLineService cartLineService,
+      SaleOrderGeneratorService saleOrderGeneratorService,
+      SaleOrderLineGeneratorService saleOrderLineGeneratorService,
+      SaleOrderLineRepository saleOrderLineRepository) {
     this.cartRepository = cartRepository;
     this.cartInitValueService = cartInitValueService;
     this.cartLineService = cartLineService;
+    this.cartRepository = cartRepository;
+    this.saleOrderGeneratorService = saleOrderGeneratorService;
+    this.saleOrderLineGeneratorService = saleOrderLineGeneratorService;
+    this.saleOrderLineRepository = saleOrderLineRepository;
   }
 
   @Override
@@ -83,5 +105,59 @@ public class CartServiceImpl implements CartService {
     Cart cart = new Cart();
     cartInitValueService.getDefaultValues(cart);
     return cartRepository.save(cart);
+  }
+
+  @Override
+  public SaleOrder createSaleOrder(Cart cart) throws JsonProcessingException, AxelorException {
+    List<CartLine> cartLineList = cart.getCartLineList();
+    if (CollectionUtils.isNotEmpty(cartLineList)) {
+      checkProduct(cartLineList);
+    }
+    SaleOrder saleOrder = saleOrderGeneratorService.createSaleOrder(cart.getPartner());
+
+    for (CartLine cartLine : cartLineList) {
+      createSaleOrderLine(cartLine, saleOrder);
+    }
+    return saleOrder;
+  }
+
+  @Override
+  @Transactional(rollbackOn = Exception.class)
+  public void createSaleOrderLine(CartLine cartLine, SaleOrder saleOrder) throws AxelorException {
+    Product product = cartLine.getProduct();
+    if (product.getIsModel()) {
+      product = cartLine.getVariantProduct();
+    }
+    SaleOrderLine saleOrderLine =
+        saleOrderLineGeneratorService.createSaleOrderLine(saleOrder, product, cartLine.getQty());
+    saleOrderLine.setUnit(cartLine.getUnit());
+    saleOrderLineRepository.save(saleOrderLine);
+  }
+
+  protected void checkProduct(List<CartLine> cartLineList) throws AxelorException {
+    List<String> missingProductVariants = new ArrayList<>();
+
+    for (CartLine cartLine : cartLineList) {
+      Product product = cartLine.getProduct();
+      if (product.getIsModel() && cartLine.getVariantProduct() == null) {
+        missingProductVariants.add(product.getName());
+      }
+    }
+    if (!missingProductVariants.isEmpty()) {
+      throw new AxelorException(
+          TraceBackRepository.CATEGORY_NO_VALUE,
+          formatMessage(
+              I18n.get(SaleExceptionMessage.MISSING_PRODUCT_VARIANTS), missingProductVariants));
+    }
+  }
+
+  protected String formatMessage(String title, List<String> messages) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(String.format("<b>%s</b><br/>", title));
+    sb.append(
+        messages.stream()
+            .map(item -> String.format("<li>%s</li>", item))
+            .collect(Collectors.joining("", "<ul>", "</ul>")));
+    return sb.toString();
   }
 }
