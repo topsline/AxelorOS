@@ -141,4 +141,7 @@ public final class SaleExceptionMessage {
 
   public static final String PRODUCT_ADDED_TO_CART = /*$$(*/
       "%s has been added to your cart." /*)*/;
+
+  public static final String MISSING_PRODUCT_VARIANTS = /*$$(*/
+      "Please select product variant for following product(s) :" /*)*/;
 }
