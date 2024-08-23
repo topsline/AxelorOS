@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface LoyaltyAccountService {
   Optional<LoyaltyAccount> getLoyaltyAccount(Partner partner, Company company);
+
+  LoyaltyAccount acquirePoints(LoyaltyAccount loyaltyAccount, Integer delay);
 }
